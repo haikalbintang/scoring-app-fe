@@ -41,21 +41,15 @@ const AnimatedScore = ({ value }: { value: number }) => {
 };
 
 const Confetti = () => {
-  const [pieces, setPieces] = useState<ConfettiPiece[]>([]);
-
-  useEffect(() => {
+  const [pieces] = useState<ConfettiPiece[]>(() => {
     const colors = ["#facc15", "#a855f7", "#22c55e", "#ef4444"];
 
-    const generated: ConfettiPiece[] = Array.from({ length: 40 }).map(
-      (_, i) => ({
-        left: `${Math.random() * 100}%`,
-        color: colors[i % colors.length],
-        delay: `${Math.random() * 0.5}s`,
-      }),
-    );
-
-    setPieces(generated);
-  }, []);
+    return Array.from({ length: 40 }).map((_, i) => ({
+      left: `${Math.random() * 100}%`,
+      color: colors[i % colors.length],
+      delay: `${Math.random() * 0.5}s`,
+    }));
+  });
 
   return (
     <>
@@ -189,7 +183,6 @@ const ResultPage = () => {
           {/* ===== ROWS ===== */}
           {sortedResults.map((result, index) => {
             const podium = podiumStyle(index);
-            const maxScore = Math.max(...result.scores);
 
             return (
               <Fragment key={result.username}>
