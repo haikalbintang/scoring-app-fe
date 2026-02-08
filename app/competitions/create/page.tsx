@@ -39,7 +39,7 @@ const CreateCompetitionPage = () => {
   return (
     <div className="container mx-auto flex flex-col items-center justify-center min-h-screen">
       <main className="bg-white text-black p-3 rounded-lg">
-        <h1 className="text-xl mb-4">C4 Polling</h1>
+        <h1 className="text-xl mb-4">Create a New Competition</h1>
 
         <form onSubmit={handleCreate} className="flex flex-col gap-4">
           <InputScore

@@ -20,6 +20,26 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
   );
   const [scores, setScores] = useState<Record<number, ScoreInput>>({});
 
+  const initialScores = useMemo(() => {
+    if (!competition) return {};
+
+    const result: Record<number, ScoreInput> = {};
+    competition.competitions.participants.forEach((participant) => {
+      result[participant.user_id] = { score: 0, feedback: "" };
+    });
+
+    return result;
+  }, [competition]);
+
+  useEffect(() => {
+    if (
+      Object.keys(scores).length === 0 &&
+      Object.keys(initialScores).length > 0
+    ) {
+      setScores(initialScores);
+    }
+  }, [initialScores, scores]);
+
   useEffect(() => {
     const fetchCompetition = async () => {
       const token = localStorage.getItem("token");
@@ -71,8 +91,8 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
     const payload = {
       polls: Object.entries(scores).map(([participantId, p]) => ({
         participant_id: Number(participantId),
-        score: p.score,
-        feedback: p.feedback,
+        score: p.score || 0,
+        feedback: p.feedback || "empty",
       })),
     };
 
