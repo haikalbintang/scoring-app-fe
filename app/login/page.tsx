@@ -24,6 +24,7 @@ const LoginPage = () => {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
+        withCredentials: true,
       });
 
       localStorage.setItem("token", response.data.access_token);
