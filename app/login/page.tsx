@@ -16,20 +16,44 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
+import * as z from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+
+const loginSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(4, "Password must be at least 4 characters"),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+
 const LoginPage = () => {
   const router = useRouter();
 
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  /* -----------------------------
+     3️⃣ React Hook Form Setup
+  ------------------------------ */
 
-    try {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+  });
+
+  /* -----------------------------
+     4️⃣ Mutation (Async Handling)
+  ------------------------------ */
+
+  const loginMutation = useMutation({
+    mutationFn: async (data: LoginFormValues) => {
       const formData = new URLSearchParams();
-      formData.append("username", username);
-      formData.append("password", password);
+      formData.append("username", data.username);
+      formData.append("password", data.password);
 
       const response = await axios.post(`${BASE_URL}/auth/token`, formData, {
         headers: {
@@ -38,13 +62,20 @@ const LoginPage = () => {
         withCredentials: true,
       });
 
-      localStorage.setItem("token", response.data.access_token);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      localStorage.setItem("token", data.access_token);
+      router.replace("/competitions");
+    },
+  });
 
-      router.push("/competitions");
-    } catch (error) {
-      console.error("Login error:", error);
-      alert("Login failed. Please check your credentials and try again.");
-    }
+  /* -----------------------------
+     5️⃣ Submit Handler
+  ------------------------------ */
+
+  const onSubmit = (data: LoginFormValues) => {
+    loginMutation.mutate(data);
   };
 
   return (
@@ -55,16 +86,23 @@ const LoginPage = () => {
       <main className="bg-white p-6 rounded-lg w-full max-w-md shadow-md dark:bg-gray-800">
         <TypographyH4>Login to Your Account</TypographyH4>
 
-        <form onSubmit={handleLogin} className="flex flex-col mt-6 gap-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col mt-6 gap-4"
+        >
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="username">Username</FieldLabel>
               <Input
                 id="username"
-                placeholder="Peter Parker"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                placeholder="peterparker"
+                {...register("username")}
               />
+              {errors.username && (
+                <FieldDescription className="text-red-500">
+                  {errors.username.message}
+                </FieldDescription>
+              )}
             </Field>
             <Field>
               <FieldLabel htmlFor="password">Password</FieldLabel>{" "}
@@ -73,9 +111,8 @@ const LoginPage = () => {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   className="pr-10"
+                  {...register("password")}
                 />
 
                 <button
@@ -86,9 +123,11 @@ const LoginPage = () => {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              {/* <FieldDescription>
-                Make sure your password is secure.
-              </FieldDescription> */}
+              {errors.password && (
+                <FieldDescription className="text-red-500">
+                  {errors.password.message}
+                </FieldDescription>
+              )}
             </Field>
             <Field orientation="horizontal" className="justify-end gap-2">
               <Button
@@ -98,8 +137,16 @@ const LoginPage = () => {
               >
                 Register
               </Button>
-              <Button type="submit">Login</Button>
+              <Button type="submit" disabled={loginMutation.isPending}>
+                {loginMutation.isPending ? "Logging in..." : "Login"}
+              </Button>
             </Field>
+            {/* Server Error */}
+            {loginMutation.isError && (
+              <FieldDescription className="text-red-500 text-center">
+                Invalid credentials. Please try again.
+              </FieldDescription>
+            )}
           </FieldGroup>
         </form>
       </main>
