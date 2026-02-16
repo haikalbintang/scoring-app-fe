@@ -1,67 +1,75 @@
 "use client";
 
-import InputScore from "@/components/InputScore";
-import { BASE_URL } from "@/constants";
-import { CompetitionResponse } from "@/interface/interface";
+import { api } from "@/lib/api";
+import { Competition } from "@/interface/interface";
 import { useRouter } from "next/navigation";
 import React, { use, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { useAuthStore } from "@/stores/useAuthStore";
 
-const TOTAL_POINTS = 1000;
+import { Card, CardContent } from "@/components/ui/card";
+import { TypographyH4 } from "@/components/ui/typography-h4";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 
 interface ScoreInput {
   score: number;
   feedback: string;
 }
+
 const Page = ({ params }: { params: Promise<{ id: string }> }) => {
-  const { id } = use(params); // Unwrap the Promise
+  const { id } = use(params);
   const router = useRouter();
-  const [competition, setCompetition] = useState<CompetitionResponse | null>(
-    null,
-  );
+  const user = useAuthStore((state) => state.user);
+  const loading = useAuthStore((state) => state.loading);
+
+  const [competition, setCompetition] = useState<Competition | null>(null);
   const [scores, setScores] = useState<Record<number, ScoreInput>>({});
 
-  const initialScores = useMemo(() => {
-    if (!competition) return {};
-
-    const result: Record<number, ScoreInput> = {};
-    competition.competitions.participants.forEach((participant) => {
-      result[participant.user_id] = { score: 0, feedback: "" };
-    });
-
-    return result;
-  }, [competition]);
-
-  useEffect(() => {
-    if (
-      Object.keys(scores).length === 0 &&
-      Object.keys(initialScores).length > 0
-    ) {
-      setScores(initialScores);
-    }
-  }, [initialScores, scores]);
+  const totalPoints = competition?.max_score ?? 0;
+  /* ---------------- Fetch Competition ---------------- */
 
   useEffect(() => {
     const fetchCompetition = async () => {
-      const token = localStorage.getItem("token");
-
-      const res = await fetch(`${BASE_URL}/competitions/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-      console.log("Fetched competition:", data);
-      setCompetition(data);
+      try {
+        const res = await api.get(`/competitions/${id}`);
+        console.log("Fetched competition:", res.data);
+        setCompetition(res.data);
+      } catch (error) {
+        toast.error("Failed to fetch competition");
+      }
     };
 
-    fetchCompetition();
+    if (id) fetchCompetition();
   }, [id]);
+
+  /* ---------------- Initialize Scores ---------------- */
+
+  useEffect(() => {
+    if (!competition) return;
+
+    const result: Record<number, ScoreInput> = {};
+
+    competition.participants.forEach((p) => {
+      if (p.id !== user?.id) {
+        result[p.id] = { score: 0, feedback: "" };
+      }
+    });
+
+    setScores(result);
+  }, [competition, user]);
+
+  /* ---------------- Remaining Points ---------------- */
 
   const remainingPoints = useMemo(() => {
     const used = Object.values(scores).reduce((sum, p) => sum + p.score, 0);
-    return TOTAL_POINTS - used;
-  }, [scores]);
+    return totalPoints - used;
+  }, [scores, totalPoints]);
+
+  /* ---------------- Handlers ---------------- */
 
   const handleScoreChange = (participantId: number, score: number) => {
     setScores((prev) => ({
@@ -86,94 +94,128 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
   const handleSubmitScores = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const token = localStorage.getItem("token");
+    if (remainingPoints !== 0) {
+      toast.error(`You must distribute all ${totalPoints} points`);
+      return;
+    }
 
     const payload = {
       polls: Object.entries(scores).map(([participantId, p]) => ({
         participant_id: Number(participantId),
-        score: p.score || 0,
+        score: p.score,
         feedback: p.feedback || "empty",
       })),
     };
 
-    const res = await fetch(
-      `${BASE_URL}/competitions/participant/score/bulk-create/${id}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      },
-    );
+    console.log("Submitting payload:", payload);
 
-    if (!res.ok) {
-      throw new Error("Failed to fetch competition");
+    try {
+      await api.post(
+        `/competitions/participant/score/bulk-create/${id}`,
+        payload,
+      );
+
+      toast.success("Poll submitted successfully 🎉");
+      router.push(`/competitions/${id}/result`);
+    } catch (error) {
+      toast.error("Failed to submit poll");
     }
-
-    console.log("Poll submitted without embarrassing the codebase");
-    router.push(`/competitions/${id}/result`);
-    alert("Poll submitted successfully!");
   };
 
+  /* ---------------- UI ---------------- */
+
+  if (!competition || loading) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-4">
+        <Skeleton className="h-8 w-1/2" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <div>Unauthorized</div>;
+  }
+
   return (
-    <div className="container mx-auto flex flex-col items-center justify-center min-h-screen">
-      <main className="bg-white text-black p-3 rounded-lg">
-        <h1>{competition?.competitions.title}</h1>
-        <p>{competition?.competitions.desc}</p>
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-xl">Polling</h1>
-          <h2>
-            Remaining Points:{" "}
-            <span className="font-bold text-red-600">{remainingPoints}</span>
-          </h2>
-        </div>
-        <form
-          onSubmit={handleSubmitScores}
-          className="flex flex-col gap-4"
-          action=""
-          method="post"
-        >
-          {competition?.competitions.participants.map((participant) => (
-            <div key={participant.user_id} className="flex flex-col gap-1">
-              <InputScore
-                label={participant.username}
-                type="number"
-                value={scores[participant.user_id]?.score ?? 0}
-                onChange={(e) =>
-                  handleScoreChange(
-                    participant.user_id,
-                    Number(e.target.value) || 0,
-                  )
-                }
-                name={"score"}
-                id={"score"}
-              />
+    <main className="bg-white p-6 rounded-2xl w-full max-w-md shadow-md dark:bg-gray-800">
+      <Card className="rounded-2xl shadow-md">
+        <CardContent className="px1000-6">
+          <TypographyH4>{competition.title}</TypographyH4>
 
-              <textarea
-                className="border rounded p-2 text-sm"
-                placeholder="Feedback (optional)"
-                value={scores[participant.user_id]?.feedback ?? ""}
-                onChange={(e) =>
-                  handleFeedbackChange(participant.user_id, e.target.value)
-                }
-              />
-            </div>
-          ))}
+          <p className="text-muted-foreground mt-1">
+            {competition.description}
+          </p>
 
-          <div className="mx-auto mb-1">
-            <button
+          <div className="flex justify-between items-center mt-6">
+            <h2 className="text-lg font-semibold">Polling</h2>
+
+            <Badge
+              variant={remainingPoints === 0 ? "secondary" : "destructive"}
+              className="text-sm"
+            >
+              Remaining: {remainingPoints}
+            </Badge>
+          </div>
+
+          <form
+            onSubmit={handleSubmitScores}
+            className="flex flex-col gap-6 mt-6"
+          >
+            {competition.participants
+              .filter((p) => p.id !== user.id)
+              .map((participant) => (
+                <div
+                  key={participant.id}
+                  className="p-4 rounded-xl border space-y-3"
+                >
+                  <div className="font-medium">{participant.username}</div>
+
+                  <Input
+                    type="number"
+                    min={0}
+                    max={
+                      Number(scores[participant.id]?.score || 0) +
+                      remainingPoints
+                    }
+                    value={scores[participant.id]?.score ?? 0}
+                    onChange={(e) =>
+                      handleScoreChange(
+                        participant.id,
+                        Number(e.target.value) || 0,
+                      )
+                    }
+                  />
+
+                  <Textarea
+                    placeholder="Feedback (optional)"
+                    value={scores[participant.id]?.feedback ?? ""}
+                    onChange={(e) =>
+                      handleFeedbackChange(participant.id, e.target.value)
+                    }
+                  />
+                </div>
+              ))}
+
+            <Button
               type="submit"
               disabled={remainingPoints !== 0}
-              className="bg-violet-500 disabled:opacity-50 text-white px-4 py-1.5 rounded-lg"
+              className="w-full bg-linear-to-br from-[#A3162E] to-[#1B3691]
+              text-white shadow-md hover:shadow-lg
+              hover:opacity-95 transition-all duration-200"
             >
               Submit Poll
-            </button>
-          </div>
-        </form>
-      </main>
-    </div>
+            </Button>
+
+            {remainingPoints !== 0 && (
+              <p className="text-sm text-destructive text-center">
+                You must distribute all {totalPoints} points.
+              </p>
+            )}
+          </form>
+        </CardContent>
+      </Card>
+    </main>
   );
 };
 

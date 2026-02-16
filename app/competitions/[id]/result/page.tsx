@@ -1,7 +1,11 @@
 "use client";
 
-import { BASE_URL } from "@/constants";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { TypographyH4 } from "@/components/ui/typography-h4";
 import { CompetitionScore } from "@/interface/interface";
+import { getCompetitionScores } from "@/services/competition.service";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Fragment, useEffect, useMemo, useState } from "react";
@@ -20,16 +24,21 @@ const useCountUp = (target: number, duration = 400) => {
 
   useEffect(() => {
     let start: number | null = null;
+    let frameId: number;
 
     const step = (timestamp: number) => {
       if (!start) start = timestamp;
       const progress = Math.min((timestamp - start) / duration, 1);
       setValue(Math.floor(progress * target));
 
-      if (progress < 1) requestAnimationFrame(step);
+      if (progress < 1) {
+        frameId = requestAnimationFrame(step);
+      }
     };
 
-    requestAnimationFrame(step);
+    frameId = requestAnimationFrame(step);
+
+    return () => cancelAnimationFrame(frameId);
   }, [target, duration]);
 
   return value;
@@ -80,19 +89,22 @@ const ResultPage = () => {
   const id = params?.id as string;
 
   useEffect(() => {
+    if (!id) return;
+
     const fetchResults = async () => {
-      const token = localStorage.getItem("token");
+      try {
+        const { data } = await getCompetitionScores(id);
 
-      const res = await fetch(`${BASE_URL}/competitions/${id}/scores`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        const safeData = Array.isArray(data) ? data : [];
+        setResults(safeData);
 
-      const data = await res.json();
-      setResults(data);
-
-      if (data.length > 0) {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 2200);
+        if (safeData.length > 0) {
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 2200);
+        }
+      } catch (error) {
+        console.error("Failed to fetch results:", error);
+        setResults([]);
       }
     };
 
@@ -100,29 +112,36 @@ const ResultPage = () => {
   }, [id]);
 
   /* ===== derived values ===== */
-  const maxScores = Math.max(0, ...results.map((r) => r.scores.length));
+
+  const maxScores = useMemo(() => {
+    if (!results.length) return 0;
+    return Math.max(...results.map((r) => r.scores?.length ?? 0));
+  }, [results]);
 
   const columnMaxScores = useMemo(() => {
-    return Array.from({ length: maxScores }).map((_, colIndex) =>
-      Math.max(
-        ...results
-          .map((r) => r.scores[colIndex])
-          .filter((s): s is number => s !== undefined),
-      ),
-    );
+    if (!results.length || maxScores === 0) return [];
+
+    return Array.from({ length: maxScores }).map((_, colIndex) => {
+      const values = results
+        .map((r) => r.scores?.[colIndex])
+        .filter((s): s is number => typeof s === "number");
+
+      return values.length ? Math.max(...values) : 0;
+    });
   }, [results, maxScores]);
 
-  const sortedResults = useMemo(
-    () => [...results].sort((a, b) => b.total_score - a.total_score),
-    [results],
-  );
+  const sortedResults = useMemo(() => {
+    return [...results].sort(
+      (a, b) => (b.total_score ?? 0) - (a.total_score ?? 0),
+    );
+  }, [results]);
 
   const toggleFeedback = (username: string) => {
     setOpenUser((prev) => (prev === username ? null : username));
   };
 
   const scoreColor = (score?: number) => {
-    if (score === undefined) return "text-gray-400";
+    if (typeof score !== "number") return "text-gray-400";
     if (score >= 80) return "text-green-600";
     if (score >= 50) return "text-yellow-600";
     return "text-red-600";
@@ -157,116 +176,149 @@ const ResultPage = () => {
   };
 
   return (
-    <div className="container mx-auto min-h-screen flex items-center justify-center">
-      <main className="bg-white text-black p-4 rounded-lg w-full max-w-4xl relative overflow-hidden">
-        {showConfetti && <Confetti />}
-        <h1 className="text-2xl font-bold mb-4">Results</h1>
+    <main className="bg-white p-6 rounded-2xl w-full max-w-md shadow-md dark:bg-gray-800">
+      <Card className="w-full max-w-xl shadow-md rounded-2xl">
+        <CardContent className="px-8 relative overflow-hidden">
+          {showConfetti && <Confetti />}
 
-        {/* ONE GRID FOR HEADER + ROWS */}
-        <div
-          className="grid gap-y-2 gap-x-4"
-          style={{
-            gridTemplateColumns: `1.5fr repeat(${maxScores}, 3rem) 4rem`,
-          }}
-        >
-          {/* ===== HEADER ===== */}
-          <div className="font-bold">Participants</div>
-
-          {Array.from({ length: maxScores }).map((_, i) => (
-            <div key={i} className="text-center font-bold">
-              S{i + 1}
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <TypographyH4>Competition Results</TypographyH4>
+            <div className="flex">
+              <Link href="/competitions">
+                <ChevronLeft className="w-7 h-7" />
+              </Link>
+              <Link href="/competitions">
+                <ChevronRight className="w-7 h-7" />
+              </Link>
             </div>
-          ))}
+          </div>
 
-          <div className="text-right font-bold">Total</div>
+          {results.length === 0 ? (
+            <div className="text-muted-foreground text-center py-10">
+              No results available.
+            </div>
+          ) : (
+            <div
+              className="grid gap-y-3 gap-x-4 text-sm"
+              style={{
+                gridTemplateColumns: `1.5fr repeat(${maxScores}, 3rem) 4rem`,
+              }}
+            >
+              {/* HEADER */}
+              <div className="font-semibold text-muted-foreground">
+                Participants
+              </div>
 
-          {/* ===== ROWS ===== */}
-          {sortedResults.map((result, index) => {
-            const podium = podiumStyle(index);
-
-            return (
-              <Fragment key={result.username}>
-                {/* Username */}
+              {Array.from({ length: maxScores }).map((_, i) => (
                 <div
-                  className={`font-semibold flex items-center gap-2 ${podium.name}`}
+                  key={i}
+                  className="text-center font-semibold text-muted-foreground"
                 >
-                  {podium.badge && (
-                    <span
-                      className={`text-xl ${
-                        podium.crown ? "crown-animate" : ""
+                  S{i + 1}
+                </div>
+              ))}
+
+              <div className="text-right font-semibold text-muted-foreground">
+                Total
+              </div>
+
+              {/* ROWS */}
+              {sortedResults.map((result, index) => {
+                const podium = podiumStyle(index);
+
+                return (
+                  <>
+                    {/* Username */}
+                    <div
+                      className={`font-medium flex items-center gap-2 ${
+                        podium.name || ""
                       }`}
                     >
-                      {podium.badge}
-                    </span>
-                  )}
+                      {podium.badge && (
+                        <span className="text-lg">{podium.badge}</span>
+                      )}
+                      {result.username}
+                    </div>
 
-                  <span>{result.username}</span>
-                </div>
-                {/* Scores */}
-                {Array.from({ length: maxScores }).map((_, i) => {
-                  const score = result.scores[i];
-                  const isMax =
-                    score !== undefined && score === columnMaxScores[i];
+                    {/* Scores */}
+                    {Array.from({ length: maxScores }).map((_, i) => {
+                      const score = result.scores?.[i];
+                      const isMax =
+                        typeof score === "number" &&
+                        score === columnMaxScores[i];
 
-                  return (
-                    <div
-                      key={i}
-                      className={`flex items-center justify-center rounded tabular-nums
-                        ${scoreColor(score)}
-                        ${isMax ? "bg-green-200 font-bold" : ""}
-                      `}
-                    >
-                      {score !== undefined ? (
-                        <AnimatedScore value={score} />
-                      ) : (
-                        "-"
+                      return (
+                        <div
+                          key={i}
+                          className={`flex items-center justify-center rounded-md tabular-nums
+                          ${
+                            isMax
+                              ? "bg-green-100 font-semibold text-green-700"
+                              : "text-foreground"
+                          }
+                        `}
+                        >
+                          {typeof score === "number" ? (
+                            <AnimatedScore value={score} />
+                          ) : (
+                            "-"
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Total */}
+                    <div className="text-right font-semibold tabular-nums">
+                      <AnimatedScore value={result.total_score ?? 0} />
+                    </div>
+
+                    {/* Feedback */}
+                    <div className="col-span-full pb-4 border-b border-muted">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="px-0 text-violet-500"
+                        onClick={() => toggleFeedback(result.username)}
+                      >
+                        {openUser === result.username
+                          ? "Hide feedback"
+                          : "Show feedback"}
+                      </Button>
+
+                      {openUser === result.username && (
+                        <ul className="mt-2 ml-4 list-disc text-sm text-muted-foreground">
+                          {(result.feedbacks ?? []).map((feedback, index) => (
+                            <li key={index}>
+                              {feedback && feedback !== "empty"
+                                ? feedback
+                                : "No feedback"}
+                            </li>
+                          ))}
+                        </ul>
                       )}
                     </div>
-                  );
-                })}
+                  </>
+                );
+              })}
+            </div>
+          )}
 
-                {/* Total */}
-                <div className="text-right font-bold">
-                  = <AnimatedScore value={result.total_score} />
-                </div>
-
-                {/* Feedback (full width) */}
-                <div
-                  className={`col-span-full text-sm text-gray-700 pb-3 border-b ${podium.row}`}
-                >
-                  <button
-                    onClick={() => toggleFeedback(result.username)}
-                    className="text-violet-500 text-xs mb-1 hover:underline"
-                  >
-                    {openUser === result.username
-                      ? "Hide feedback"
-                      : "Show feedback"}
-                  </button>
-
-                  {openUser === result.username && (
-                    <ul className="list-disc ml-4 mt-1">
-                      {result.feedbacks.map((feedback, index) => (
-                        <li key={index}>
-                          {feedback && feedback !== "empty"
-                            ? feedback
-                            : "No feedback"}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </Fragment>
-            );
-          })}
-        </div>
-
-        <Link href="/competitions">
-          <button className="mt-4 w-full bg-violet-500 text-white px-4 py-1.5 rounded-lg">
-            Back to Home
-          </button>
-        </Link>
-      </main>
-    </div>
+          {/* Bottom CTA */}
+          <div className="mt-8">
+            <Link href="/competitions">
+              <Button
+                className="w-full bg-linear-to-br from-[#A3162E] to-[#1B3691]
+              text-white shadow-md hover:shadow-lg
+              hover:opacity-95 transition-all duration-200"
+              >
+                Back to Competitions
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </main>
   );
 };
 

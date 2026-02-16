@@ -7,7 +7,8 @@ export interface CompetitionParticipant {
 export interface Competition {
   id: number;
   title: string;
-  desc: string;
+  description: string;
+  max_score: number;
   participants: CompetitionParticipant[];
 }
 

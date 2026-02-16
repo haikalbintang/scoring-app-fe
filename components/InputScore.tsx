@@ -5,6 +5,8 @@ interface InputScoreProps {
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   value?: number | string;
   type?: string;
+  min?: number;
+  max?: number;
 }
 
 const InputScore = ({
@@ -14,6 +16,8 @@ const InputScore = ({
   onChange,
   value,
   type,
+  min,
+  max,
 }: InputScoreProps) => {
   return (
     <div className="flex gap-2 justify-between items-center">
@@ -25,6 +29,8 @@ const InputScore = ({
         id={id}
         onChange={onChange}
         value={value}
+        min={min}
+        max={max}
       />
     </div>
   );

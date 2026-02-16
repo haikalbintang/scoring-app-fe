@@ -3,8 +3,28 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import Providers from "./providers";
-import Image from "next/image";
+import { Toaster } from "sonner";
 import Navbar from "@/components/navbar";
+import AuthInitializer from "./auth-initializer";
+import { ModeToggle } from "@/components/ui/mode-toggle";
+import {
+  Breadcrumb,
+  BreadcrumbEllipsis,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import Link from "next/link";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,7 +49,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden`}
       >
         <ThemeProvider
           attribute="class"
@@ -38,9 +58,69 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Providers>
+            <AuthInitializer />
+            {/* Full viewport locked */}
             <div className="flex h-screen overflow-hidden">
               <Navbar />
-              <main className="flex-1 overflow-y-auto p-8">{children}</main>
+
+              {/* Main Area */}
+              <main className="flex-1 flex flex-col overflow-hidden relative">
+                {/* Mode Toggle */}
+                <div className="absolute top-4 right-8 z-10"></div>
+
+                {/* Scrollable Content ONLY here */}
+                <div className="flex-1 overflow-y-auto p-8 pt-0">
+                  <div className="flex item-center justify-between">
+                    <Breadcrumb className="py-2">
+                      <BreadcrumbList>
+                        <BreadcrumbItem>
+                          <BreadcrumbLink asChild>
+                            <Link href="/competitions">Home</Link>
+                          </BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="icon-sm" variant="ghost">
+                                <BreadcrumbEllipsis />
+                                <span className="sr-only">Toggle menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              <DropdownMenuGroup>
+                                <DropdownMenuItem>
+                                  Documentation
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>Themes</DropdownMenuItem>
+                                <DropdownMenuItem>GitHub</DropdownMenuItem>
+                              </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                          <BreadcrumbLink asChild>
+                            <Link href="#">Components</Link>
+                          </BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                          <BreadcrumbPage>Breadcrumb</BreadcrumbPage>
+                        </BreadcrumbItem>
+                      </BreadcrumbList>
+                    </Breadcrumb>
+                    <div className="py-1.5">
+                      <ModeToggle />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-700 min-w-full">
+                    {children}
+                  </div>
+                </div>
+
+                <Toaster position="top-right" richColors />
+              </main>
             </div>
           </Providers>
         </ThemeProvider>
