@@ -31,7 +31,7 @@ const LogoutButton = () => {
   return (
     <LogOut
       onClick={handleLogout}
-      className={`w-5 h-5 cursor-pointer text-[#A3162E] transition-opacity ${
+      className={`w-5 h-5 cursor-pointer text-white transition-opacity ${
         loading ? "opacity-50 pointer-events-none" : ""
       }`}
     />

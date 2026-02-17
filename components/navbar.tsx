@@ -53,27 +53,6 @@ const Navbar = () => {
           priority
         />
       </div>
-
-      <div className="flex items-center justify-end w-full px-4 py-3 pb-6 pr-6">
-        <div className="relative group flex items-center">
-          {/* Hover Text */}
-          <span
-            className="
-        absolute right-8
-        opacity-0 translate-x-2
-        group-hover:opacity-100 group-hover:translate-x-0
-        transition-all duration-200
-        text-sm font-medium text-[#A3162E]
-        pointer-events-none
-      "
-          >
-            Logout
-          </span>
-
-          {/* Icon */}
-          <LogoutButton />
-        </div>
-      </div>
     </aside>
   );
 };

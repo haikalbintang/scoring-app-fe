@@ -110,6 +110,7 @@ export default function RootLayout({
                         </BreadcrumbItem>
                       </BreadcrumbList>
                     </Breadcrumb>
+
                     <div className="py-1.5">
                       <ModeToggle />
                     </div>

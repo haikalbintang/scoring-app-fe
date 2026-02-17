@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TypographyH4 } from "@/components/ui/typography-h4";
+import { Spotlight } from "lucide-react";
+import SpotlightBorderCard from "@/components/spotlight-border-card";
 
 const LandingPage = () => {
   const router = useRouter();
@@ -48,8 +50,26 @@ const LandingPage = () => {
 
         {/* FEATURES SECTION */}
         <section className="grid md:grid-cols-3 gap-8">
-          <Card className="rounded-2xl shadow-md hover:shadow-lg transition-all duration-200">
+          <Card
+            className="
+    group relative overflow-hidden
+    rounded-2xl
+    border border-gray-200/50 dark:border-gray-700/50
+    bg-white/60 dark:bg-gray-800/60
+    backdrop-blur-xl
+    shadow-md
+    transition-all duration-500
+    hover:shadow-2xl
+  "
+          >
             <CardContent className="p-6 flex flex-col gap-4">
+              <div
+                className="
+    absolute inset-0 opacity-0 group-hover:opacity-100
+    transition duration-500
+    bg-linear-to-br from-[#A3162E]/10 via-transparent to-[#1B3691]/10
+  "
+              />
               <TypographyH4>Simple Setup</TypographyH4>
               <p className="text-muted-foreground text-sm">
                 Quickly create competitions with custom total points and
@@ -58,8 +78,26 @@ const LandingPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl shadow-md hover:shadow-lg transition-all duration-200">
+          <Card
+            className="
+    group relative overflow-hidden
+    rounded-2xl
+    border border-gray-200/50 dark:border-gray-700/50
+    bg-white/60 dark:bg-gray-800/60
+    backdrop-blur-xl
+    shadow-md
+    transition-all duration-500
+    hover:shadow-2xl
+  "
+          >
             <CardContent className="p-6 flex flex-col gap-4">
+              <div
+                className="
+    absolute inset-0 opacity-0 group-hover:opacity-100
+    transition duration-500
+    bg-linear-to-br from-[#A3162E]/10 via-transparent to-[#1B3691]/10
+  "
+              />
               <TypographyH4>Fair Scoring</TypographyH4>
               <p className="text-muted-foreground text-sm">
                 Score participants transparently and keep track of every
@@ -68,8 +106,26 @@ const LandingPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl shadow-md hover:shadow-lg transition-all duration-200">
+          <Card
+            className="
+    group relative overflow-hidden
+    rounded-2xl
+    border border-gray-200/50 dark:border-gray-700/50
+    bg-white/60 dark:bg-gray-800/60
+    backdrop-blur-xl
+    shadow-md
+    transition-all duration-500
+    hover:shadow-2xl
+  "
+          >
             <CardContent className="p-6 flex flex-col gap-4">
+              <div
+                className="
+    absolute inset-0 opacity-0 group-hover:opacity-100
+    transition duration-500
+    bg-linear-to-br from-[#A3162E]/10 via-transparent to-[#1B3691]/10
+  "
+              />
               <TypographyH4>Clean Dashboard</TypographyH4>
               <p className="text-muted-foreground text-sm">
                 Designed with clarity in mind — no clutter, just focus on
@@ -84,8 +140,26 @@ const LandingPage = () => {
           <TypographyH4>How It Works</TypographyH4>
 
           <div className="grid md:grid-cols-3 gap-6">
-            <Card className="rounded-2xl shadow-sm">
-              <CardContent className="p-6 space-y-3">
+            <Card
+              className="
+    group relative overflow-hidden
+    rounded-2xl
+    border border-gray-200/50 dark:border-gray-700/50
+    bg-white/60 dark:bg-gray-800/60
+    backdrop-blur-xl
+    shadow-md
+    transition-all duration-500
+    hover:shadow-2xl
+  "
+            >
+              <CardContent className="p-6 flex flex-col gap-4">
+                <div
+                  className="
+    absolute inset-0 opacity-0 group-hover:opacity-100
+    transition duration-500
+    bg-linear-to-br from-[#A3162E]/10 via-transparent to-[#1B3691]/10
+  "
+                />
                 <h3 className="font-semibold">1. Create Competition</h3>
                 <p className="text-sm text-muted-foreground">
                   Define title, description, and total scoring points.
@@ -93,8 +167,26 @@ const LandingPage = () => {
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl shadow-sm">
-              <CardContent className="p-6 space-y-3">
+            <Card
+              className="
+    group relative overflow-hidden
+    rounded-2xl
+    border border-gray-200/50 dark:border-gray-700/50
+    bg-white/60 dark:bg-gray-800/60
+    backdrop-blur-xl
+    shadow-md
+    transition-all duration-500
+    hover:shadow-2xl
+  "
+            >
+              <CardContent className="p-6 flex flex-col gap-4">
+                <div
+                  className="
+    absolute inset-0 opacity-0 group-hover:opacity-100
+    transition duration-500
+    bg-linear-to-br from-[#A3162E]/10 via-transparent to-[#1B3691]/10
+  "
+                />
                 <h3 className="font-semibold">2. Add Participants</h3>
                 <p className="text-sm text-muted-foreground">
                   Select users who will join the competition.
@@ -102,8 +194,26 @@ const LandingPage = () => {
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl shadow-sm">
-              <CardContent className="p-6 space-y-3">
+            <Card
+              className="
+    group relative overflow-hidden
+    rounded-2xl
+    border border-gray-200/50 dark:border-gray-700/50
+    bg-white/60 dark:bg-gray-800/60
+    backdrop-blur-xl
+    shadow-md
+    transition-all duration-500
+    hover:shadow-2xl
+  "
+            >
+              <CardContent className="p-6 flex flex-col gap-4">
+                <div
+                  className="
+    absolute inset-0 opacity-0 group-hover:opacity-100
+    transition duration-500
+    bg-linear-to-br from-[#A3162E]/10 via-transparent to-[#1B3691]/10
+  "
+                />
                 <h3 className="font-semibold">3. Submit Scores</h3>
                 <p className="text-sm text-muted-foreground">
                   Evaluate fairly and generate rankings automatically.
